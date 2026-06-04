@@ -305,3 +305,136 @@ input:focus, select:focus, textarea:focus {
     margin-top: 3rem;
 }
 
+/* ==================== PASSWORD STRENGTH CHECKER STYLES ==================== */
+
+.password-strength-container {
+    margin-top: 0.5rem;
+}
+
+.strength-meter {
+    height: 6px;
+    border-radius: 3px;
+    background: #e0e0e0;
+    overflow: hidden;
+}
+
+.strength-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease, background 0.3s ease;
+    width: 0%;
+}
+
+.strength-0 .strength-bar { width: 20%; background: #e74c3c; }
+.strength-1 .strength-bar { width: 40%; background: #e74c3c; }
+.strength-2 .strength-bar { width: 60%; background: #f39c12; }
+.strength-3 .strength-bar { width: 80%; background: #2ecc71; }
+.strength-4 .strength-bar { width: 100%; background: #27ae60; }
+
+.strength-text {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.password-score {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.score-weak { background: #e74c3c; color: white; }
+.score-medium { background: #f39c12; color: white; }
+.score-strong { background: #2ecc71; color: white; }
+.score-very-strong { background: #27ae60; color: white; }
+
+.requirements-list {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-top: 0.5rem;
+    list-style: none;
+}
+
+.requirements-list li {
+    font-size: 0.75rem;
+    padding: 0.25rem 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.requirements-list li::before {
+    content: "○";
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.requirements-list li.met {
+    color: #27ae60;
+}
+
+.requirements-list li.met::before {
+    content: "✓";
+    color: #27ae60;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 38px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: #666;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    color: var(--primary-color);
+}
+
+.password-tips {
+    background: #e8f4fd;
+    border-left: 4px solid var(--primary-color);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-top: 0.8rem;
+}
+
+.password-tips h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--primary-color);
+}
+
+.password-tips p {
+    font-size: 0.7rem;
+    color: #666;
+    margin: 0.2rem 0;
+}
+
+.error-message {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+input.valid {
+    border-color: #27ae60;
+    background-color: #f0fff4;
+}
+
+input.invalid {
+    border-color: #e74c3c;
+    background-color: #fff5f5;
+}
