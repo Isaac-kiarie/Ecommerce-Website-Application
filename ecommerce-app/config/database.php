@@ -1,7 +1,7 @@
 <?php
 /**
  * Database configuration and connection management
- * UPDATED: Added complete CRUD helper methods
+ * UPDATED: Added complete CRUD helper methods and role-based session management
  */
 
 class Database {
@@ -33,13 +33,8 @@ class Database {
         return $this->conn;
     }
     
-    // ========== NEW CRUD HELPER METHODS ==========
-    
     /**
      * CREATE - Insert new record
-     * @param string $table - Table name
-     * @param array $data - Associative array of column => value
-     * @return int|false - Last insert ID or false on failure
      */
     public function create($table, $data) {
         try {
@@ -65,11 +60,6 @@ class Database {
     
     /**
      * READ - Select records with conditions
-     * @param string $table - Table name
-     * @param array $conditions - Associative array of column => value (optional)
-     * @param string $orderBy - ORDER BY clause (optional)
-     * @param string $limit - LIMIT clause (optional)
-     * @return array - Array of records
      */
     public function read($table, $conditions = [], $orderBy = '', $limit = '') {
         try {
@@ -108,11 +98,7 @@ class Database {
     }
     
     /**
-     * READ One - Select single record by ID
-     * @param string $table - Table name
-     * @param int $id - Record ID
-     * @param string $idColumn - ID column name (default 'id')
-     * @return array|false - Record or false
+     * READ ONE - Select single record by ID
      */
     public function readOne($table, $id, $idColumn = 'id') {
         try {
@@ -129,11 +115,6 @@ class Database {
     
     /**
      * UPDATE - Update existing record
-     * @param string $table - Table name
-     * @param int $id - Record ID
-     * @param array $data - Associative array of column => value
-     * @param string $idColumn - ID column name (default 'id')
-     * @return bool - Success or failure
      */
     public function update($table, $id, $data, $idColumn = 'id') {
         try {
@@ -159,10 +140,6 @@ class Database {
     
     /**
      * DELETE - Delete record
-     * @param string $table - Table name
-     * @param int $id - Record ID
-     * @param string $idColumn - ID column name (default 'id')
-     * @return bool - Success or failure
      */
     public function delete($table, $id, $idColumn = 'id') {
         try {
@@ -178,9 +155,6 @@ class Database {
     
     /**
      * COUNT - Get record count with conditions
-     * @param string $table - Table name
-     * @param array $conditions - Associative array of column => value (optional)
-     * @return int - Record count
      */
     public function count($table, $conditions = []) {
         try {
@@ -213,10 +187,6 @@ class Database {
     
     /**
      * SEARCH - Search across multiple columns
-     * @param string $table - Table name
-     * @param array $columns - Columns to search in
-     * @param string $keyword - Search keyword
-     * @return array - Search results
      */
     public function search($table, $columns, $keyword) {
         try {
@@ -237,26 +207,54 @@ class Database {
     }
 }
 
-// Session management (unchanged)
+// ========== SESSION MANAGEMENT ==========
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
     ini_set('session.use_only_cookies', 1);
-    ini_set('session.cookie_secure', 0);
+    ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
     session_start();
 }
 
+// ========== SESSION HELPER FUNCTIONS ==========
+
+/**
+ * Regenerate session ID to prevent fixation attacks
+ */
 function regenerateSession() {
     session_regenerate_id(true);
 }
 
+/**
+ * Check if user is logged in
+ */
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
+/**
+ * Check if user is admin
+ */
 function isAdmin() {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
 }
 
+/**
+ * Check if user is customer
+ */
+function isCustomer() {
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'customer';
+}
+
+/**
+ * Get user role with default fallback
+ */
+function getUserRole() {
+    return $_SESSION['user_role'] ?? 'guest';
+}
+
+/**
+ * Require login - redirect if not logged in
+ */
 function requireLogin() {
     if (!isLoggedIn()) {
         header("Location: login.php");
@@ -264,17 +262,82 @@ function requireLogin() {
     }
 }
 
+/**
+ * Require admin access - redirect if not admin
+ */
 function requireAdmin() {
+    if (!isLoggedIn()) {
+        header("Location: ../login.php");
+        exit();
+    }
     if (!isAdmin()) {
         header("Location: ../index.php");
         exit();
     }
 }
 
+/**
+ * Require customer access
+ */
+function requireCustomer() {
+    if (!isLoggedIn()) {
+        header("Location: login.php");
+        exit();
+    }
+}
+
+// ========== UTILITY FUNCTIONS ==========
+
+/**
+ * Sanitize user input
+ */
 function sanitizeInput($data) {
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
     return $data;
+}
+
+/**
+ * Get user role badge HTML
+ */
+function getUserRoleBadge($role) {
+    switch($role) {
+        case 'admin':
+            return '<span style="background: #e74c3c; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">👑 Admin</span>';
+        case 'customer':
+            return '<span style="background: #3498db; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">👤 Customer</span>';
+        default:
+            return '<span style="background: #95a5a6; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">👋 Guest</span>';
+    }
+}
+
+/**
+ * Display success message
+ */
+function displaySuccess($message) {
+    return '<div class="alert alert-success">' . htmlspecialchars($message) . '</div>';
+}
+
+/**
+ * Display error message
+ */
+function displayError($message) {
+    return '<div class="alert alert-error">' . htmlspecialchars($message) . '</div>';
+}
+
+/**
+ * Redirect to URL
+ */
+function redirect($url) {
+    header("Location: $url");
+    exit();
+}
+
+/**
+ * Get current page URL
+ */
+function currentUrl() {
+    return (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 }
 ?>

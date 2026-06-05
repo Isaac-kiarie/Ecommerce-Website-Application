@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once ('../config/database.php');
 
 $error = '';
 $success = '';
@@ -32,20 +32,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error = "Email already registered";
         } else {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $query = "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)";
+            
+            // ========== CHANGE: Added 'role' column to INSERT ==========
+            $query = "INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, 'customer')";
             $stmt = $db->prepare($query);
             $stmt->bindParam(':name', $name);
             $stmt->bindParam(':email', $email);
             $stmt->bindParam(':password', $hashed_password);
             
             if ($stmt->execute()) {
-                $success = "Registration successful! Please login.";
-                $name = $email = '';
+                // ========== REDIRECT TO LOGIN PAGE AFTER SUCCESSFUL REGISTRATION ==========
+                // Set success message in session to show on login page
+                $_SESSION['registration_success'] = "Registration successful! Please login with your credentials.";
+                
+                // Redirect to login page
+                header("Location: login.php");
+                exit(); // Always call exit after header redirect
             } else {
                 $error = "Registration failed. Please try again.";
             }
         }
     }
+}
+$success_message = '';
+if (isset($_SESSION['registration_success'])) {
+    $success_message = $_SESSION['registration_success'];
+    unset($_SESSION['registration_success']); // Clear it after displaying
 }
 ?>
 
@@ -239,6 +251,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .score-medium { background: #f39c12; color: white; }
         .score-strong { background: #2ecc71; color: white; }
         .score-very-strong { background: #27ae60; color: white; }
+        
+        /* Auto-redirect message */
+        .redirect-message {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #d4edda;
+            border-radius: 8px;
+            color: #155724;
+        }
     </style>
 </head>
 <body>
@@ -261,11 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
             <div class="card-body">
                 <?php if($error): ?>
-                    <div class="alert alert-error"><?php echo $error; ?></div>
-                <?php endif; ?>
-                
-                <?php if($success): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                    <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
                 
                 <form id="registerForm" method="POST" novalidate>
@@ -461,19 +479,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Cap score at 4
             score = Math.min(4, Math.floor(score / 2) + (score % 2));
             
-            let strengthText = '';
+            let strengthTextValue = '';
             let strengthClass = '';
             switch(score) {
-                case 0: strengthText = 'Very Weak'; strengthClass = 'weak'; break;
-                case 1: strengthText = 'Weak'; strengthClass = 'weak'; break;
-                case 2: strengthText = 'Medium'; strengthClass = 'medium'; break;
-                case 3: strengthText = 'Strong'; strengthClass = 'strong'; break;
-                case 4: strengthText = 'Very Strong'; strengthClass = 'very-strong'; break;
+                case 0: strengthTextValue = 'Very Weak'; strengthClass = 'weak'; break;
+                case 1: strengthTextValue = 'Weak'; strengthClass = 'weak'; break;
+                case 2: strengthTextValue = 'Medium'; strengthClass = 'medium'; break;
+                case 3: strengthTextValue = 'Strong'; strengthClass = 'strong'; break;
+                case 4: strengthTextValue = 'Very Strong'; strengthClass = 'very-strong'; break;
             }
             
             return {
                 score: score,
-                text: strengthText,
+                text: strengthTextValue,
                 class: strengthClass,
                 feedback: feedback.join(', '),
                 entropy: Math.round(entropy)
@@ -513,7 +531,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             const allRequirementsMet = updateRequirements(password);
             
             // Update strength meter
-            strengthBar.parentElement.parentElement.className = 'password-strength-container strength-' + strength.score;
+            const container = strengthBar.parentElement.parentElement;
+            if (container) {
+                container.className = 'password-strength-container strength-' + strength.score;
+            }
             strengthText.innerHTML = `Password Strength: ${strength.text}`;
             
             // Add entropy display
@@ -700,35 +721,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         validatePassword();
         updateSubmitButton();
         
-        // Form submission
-        form.addEventListener('submit', function(e) {
-            const isPasswordStrong = validatePassword();
-            const isMatch = validateConfirmPassword();
-            
-            if (!isPasswordStrong) {
-                e.preventDefault();
-                alert('Please choose a stronger password for better security.');
-                passwordInput.focus();
-                return false;
-            }
-            
-            if (!isMatch) {
-                e.preventDefault();
-                alert('Passwords do not match. Please check again.');
-                confirmInput.focus();
-                return false;
-            }
-        });
-        
-        // Real-time password strength demonstration
-        console.log('✅ Password Strength Checker is active!');
-        console.log('Features include:');
-        console.log('- Real-time password strength meter');
-        console.log('- Password entropy calculation');
-        console.log('- Common password detection');
-        console.log('- Real-time requirement checklist');
-        console.log('- Show/Hide password toggle');
-        console.log('- Submit button enables only when password is strong enough');
+        // Form submission - Note: PHP handles the redirect, not JavaScript
+        // The form submits normally and PHP will redirect on success
+        console.log('✅ Registration form with auto-redirect is active!');
+        console.log('After successful registration, you will be redirected to login page.');
     </script>
 </body>
 </html>
